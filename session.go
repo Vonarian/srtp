@@ -109,9 +109,16 @@ func (s *session) close() error {
 		return err
 	}
 
-	<-s.closed
-
-	return nil
+	// Drain newStream while waiting for the read goroutine to exit.
+	// The read goroutine may be blocked sending a newly discovered stream
+	// to newStream when nobody is receiving from it (e.g., during resume).
+	for {
+		select {
+		case <-s.newStream:
+		case <-s.closed:
+			return nil
+		}
+	}
 }
 
 func (s *session) start(
@@ -165,4 +172,14 @@ func (s *session) start(
 	close(s.started)
 
 	return nil
+}
+
+// LocalContext returns the local SRTP context.
+func (s *session) LocalContext() *Context {
+	return s.localContext
+}
+
+// RemoteContext returns the remote SRTP context.
+func (s *session) RemoteContext() *Context {
+	return s.remoteContext
 }

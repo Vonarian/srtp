@@ -371,6 +371,54 @@ func (c *Context) SetIndex(ssrc uint32, index uint32) {
 	s.srtcpIndex = index % (maxSRTCPIndex + 1)
 }
 
+// GetActiveSRTPSSRCs returns all active SRTP SSRCs in this context.
+func (c *Context) GetActiveSRTPSSRCs() []uint32 {
+	var ssrcs []uint32
+	for ssrc := range c.srtpSSRCStates {
+		ssrcs = append(ssrcs, ssrc)
+	}
+	return ssrcs
+}
+
+// GetActiveSRTCPSSRCs returns all active SRTCP SSRCs in this context.
+func (c *Context) GetActiveSRTCPSSRCs() []uint32 {
+	var ssrcs []uint32
+	for ssrc := range c.srtcpSSRCStates {
+		ssrcs = append(ssrcs, ssrc)
+	}
+	return ssrcs
+}
+
+// GetSRTPSSRCIndex retrieves the current index (ROC | seq) for a given SSRC.
+func (c *Context) GetSRTPSSRCIndex(ssrc uint32) (uint64, bool) {
+	s, ok := c.srtpSSRCStates[ssrc]
+	if !ok {
+		return 0, false
+	}
+	return s.index, true
+}
+
+// InjectSRTPSSRCIndex forces the index (ROC | seq) for a given SSRC.
+func (c *Context) InjectSRTPSSRCIndex(ssrc uint32, index uint64) {
+	s := c.getSRTPSSRCState(ssrc)
+	s.index = index
+}
+
+// GetSRTCPSSRCIndex retrieves the current index for a given SRTCP SSRC.
+func (c *Context) GetSRTCPSSRCIndex(ssrc uint32) (uint32, bool) {
+	s, ok := c.srtcpSSRCStates[ssrc]
+	if !ok {
+		return 0, false
+	}
+	return s.srtcpIndex, true
+}
+
+// InjectSRTCPSSRCIndex forces the index for a given SRTCP SSRC.
+func (c *Context) InjectSRTCPSSRCIndex(ssrc uint32, index uint32) {
+	s := c.getSRTCPSSRCState(ssrc)
+	s.srtcpIndex = index
+}
+
 //nolint:cyclop
 func (c *Context) checkRCCMode() error {
 	if c.rccMode == RCCModeNone {
